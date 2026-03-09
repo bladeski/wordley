@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wordley - A word guessing game with adjustable difficulty (4-6 letter words).">
+  <title>Wordley</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <a href="#guessForm" class="skip-link">Skip to game</a>
+
+  <header>
+    <h1>Wordley</h1>
+    <button type="button" id="settingsBtn" class="icon-btn" aria-label="Open settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <div class="dialog-header">
+      <h2 id="settingsTitle">Settings</h2>
+      <button type="button" id="closeSettings" class="icon-btn" aria-label="Close settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dialog-content">
+      <label class="setting-row" for="lengthSelect">
+        <span>Difficulty</span>
+        <select id="lengthSelect" aria-label="Word length">
+          <option value="4">4 letters</option>
+          <option value="5" selected>5 letters</option>
+          <option value="6">6 letters</option>
+        </select>
+      </label>
+      <label class="setting-row" for="timerSelect">
+        <span>Timer</span>
+        <select id="timerSelect" aria-label="Timer duration">
+          <option value="0" selected>None</option>
+          <option value="15">15 sec</option>
+          <option value="30">30 sec</option>
+          <option value="45">45 sec</option>
+          <option value="60">60 sec</option>
+        </select>
+      </label>
+      <fieldset class="setting-row players-group">
+        <legend>Players</legend>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="playerCount" value="1" checked>
+            <span>1</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="playerCount" value="2">
+            <span>2</span>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+  </dialog>
+
+  <main class="board-shell">
+    <nav class="alpha-col" id="alphaLeft" aria-label="Letter status A through M"></nav>
+
+    <div class="board-stack">
+      <section id="board" role="region" aria-label="Game board with previous guesses">
+        <div id="turnIndicator" class="turn-indicator" role="status" aria-live="polite" hidden></div>
+      </section>
+
+      <form id="guessForm" aria-label="Enter your guess">
+        <fieldset class="guessLetters">
+          <legend class="visually-hidden">Enter letters for your guess</legend>
+          <game-tile class="guess-letter letter1" index="0" type="letter"></game-tile>
+          <game-tile class="guess-letter letter2" index="1" type="letter"></game-tile>
+          <game-tile class="guess-letter letter3" index="2" type="letter"></game-tile>
+          <game-tile class="guess-letter letter4" index="3" type="letter"></game-tile>
+          <game-tile class="guess-letter letter5" index="4" type="letter"></game-tile>
+          <game-tile class="guess-letter letter6" index="5" type="letter"></game-tile>
+        </fieldset>
+        <div class="button-group" role="group" aria-label="Game actions">
+          <button type="submit" id="submitGuess">Guess</button>
+          <button type="button" id="resetGame" aria-label="Start new game">↺</button>
+        </div>
+      </form>
+
+      <div id="message" class="message" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <nav class="alpha-col" id="alphaRight" aria-label="Letter status N through Z"></nav>
+  </main>
+
+  <template id="RowTemplate">
+    <div class="row" role="group" aria-label="Guess row">
+      <div class="tiles">
+        <game-tile class="letter1" index="0" readonly></game-tile>
+        <game-tile class="letter2" index="1" readonly></game-tile>
+        <game-tile class="letter3" index="2" readonly></game-tile>
+        <game-tile class="letter4" index="3" readonly></game-tile>
+        <game-tile class="letter5" index="4" readonly></game-tile>
+        <game-tile class="letter6" index="5" readonly></game-tile>
+      </div>
+      <span class="tooltip" role="tooltip" id=""></span>
+    </div>
+  </template>
+
+  <script type="module" src="game.ts"></script>
+</body>
+
+</html>

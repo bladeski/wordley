@@ -1,0 +1,23 @@
+{
+  "name": "wordley",
+  "version": "1.0.0",
+  "description": "A Wordle inspired game for one or two players",
+  "source": "src/index.html",
+  "repository": "https://github.com/bladeski/wordley",
+  "author": "Bladeski",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel": "^2.16.4",
+    "parcel-reporter-static-files-copy": "^1.5.3",
+    "typescript": "^5.9.3"
+  },
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "staticFiles": {
+    "staticPath": "static",
+    "distDir": "dist"
+  }
+}
