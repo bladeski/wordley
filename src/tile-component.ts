@@ -75,7 +75,6 @@ export class GameTile extends HTMLElement {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          --tile-size: var(--space-11, 3rem);
           --tile-font-size: var(--font-size-lg, 1.5rem);
           --tile-border-radius: var(--radius-sm, 0.25rem);
           --tile-border-width: var(--border-sm, 2px);
