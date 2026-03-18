@@ -83,7 +83,7 @@ const STATUS_PRIORITY: Readonly<Record<LetterStatus, number>> = Object.freeze({
  * @returns Array of allowed words.
  */
 async function loadWords(length = 5): Promise<string[]> {
-  const response = await fetch(`/words-${length}-letter.json`);
+  const response = await fetch(`./words-${length}-letter.json`);
   if (!response.ok) throw new Error(`Unable to load words-${length}-letter.json`);
   return response.json();
 }
