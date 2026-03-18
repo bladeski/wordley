@@ -22,8 +22,8 @@
   },
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "start": "parcel",
-    "build": "parcel build",
+    "start": "parcel --dist-dir dist-dev",
+    "build": "parcel build --public-url ./",
     "lint": "eslint . --ext .ts,.tsx,.js",
     "lint:fix": "eslint . --ext .ts,.tsx,.js --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\""
