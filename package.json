@@ -7,17 +7,35 @@
   "author": "Bladeski",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "parcel": "^2.16.4",
     "parcel-reporter-static-files-copy": "^1.5.3",
+    "prettier": "^3.8.1",
     "typescript": "^5.9.3"
   },
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "start": "parcel",
-    "build": "parcel build"
+    "build": "parcel build",
+    "lint": "eslint . --ext .ts,.tsx,.js",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\""
   },
   "staticFiles": {
     "staticPath": "static",
     "distDir": "dist"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

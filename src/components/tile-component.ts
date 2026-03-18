@@ -4,7 +4,17 @@
  * with customizable appearance based on game state.
  */
 
-export type TileStatus = 'correct' | 'present' | 'absent' | '';
+export type TileStatus =
+  | 'correct'
+  | 'success' // Green
+  | 'present'
+  | 'warning' // Amber
+  | 'absent' // Grey
+  | 'disabled' // Semi-transparent for disabled state
+  | 'info' // Blue, for informational purposes
+  | 'error'
+  | 'danger' // Red, for error states
+  | '';
 export type TileType = 'letter' | 'number';
 
 export interface TileInputEventDetail {
@@ -27,30 +37,30 @@ export interface TileKeydownEventDetail {
 
 /**
  * Custom Tile web component for the Wordley game.
- * 
+ *
  * Features:
  * - Display mode (readonly) for showing guessed letters
  * - Input mode for entering new guesses
  * - Status-based coloring (correct/present/absent)
  * - Keyboard navigation support
  * - Shadow DOM encapsulation
- * 
+ *
  * @element game-tile
- * 
+ *
  * @attr {string} value - The character displayed in the tile
  * @attr {boolean} readonly - Whether the tile is read-only (display mode)
  * @attr {string} type - Input type: "letter" (default) or "number"
  * @attr {string} status - Tile status/color: "correct" | "present" | "absent" | ""
  * @attr {number} index - Position index for the tile (used in events)
  * @attr {string} placeholder - Placeholder character to show (e.g., for correct letters)
- * 
+ *
  * @fires tile-input - When the tile value changes (detail: { value, index })
  * @fires tile-focus - When the tile receives focus (detail: { index })
  * @fires tile-keydown - When a key is pressed (detail: { key, index })
  */
 export class GameTile extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['value', 'readonly', 'type', 'status', 'index', 'disabled', 'placeholder'];
+    return ['value', 'readonly', 'type', 'status', 'index', 'disabled', 'placeholder', 'selected'];
   }
 
   constructor() {
@@ -75,21 +85,23 @@ export class GameTile extends HTMLElement {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          --tile-font-size: var(--font-size-lg, 1.5rem);
-          --tile-border-radius: var(--radius-sm, 0.25rem);
+          --tile-scale: var(--scale, 1);
+          --tile-font-size: calc(1.5rem * var(--tile-scale));
+          --tile-size: calc(4rem * var(--tile-scale));
+          --tile-border-radius: calc(var(--radius-sm, 0.25rem) * var(--tile-scale));
           --tile-border-width: var(--border-sm, 2px);
           --tile-bg: var(--color-tile-bg, #ffffff);
           --tile-border: var(--color-tile-border, #d3d6da);
           --tile-text: var(--color-tile-text, #1a1a1b);
         }
 
-        :host([status="correct"]) {
+        :host([status="correct"]), :host([status="success"]) {
           --tile-bg: var(--color-success-bg, rgba(34, 197, 94, 0.18));
           --tile-border: var(--color-success-border, rgba(34, 197, 94, 0.55));
           --tile-text: var(--color-success-text, #dcfce7);
         }
 
-        :host([status="present"]) {
+        :host([status="present"]), :host([status="warning"]) {
           --tile-bg: var(--color-warning-bg, rgba(234, 179, 8, 0.18));
           --tile-border: var(--color-warning-border, rgba(234, 179, 8, 0.55));
           --tile-text: var(--color-warning-text, #fef9c3);
@@ -102,9 +114,26 @@ export class GameTile extends HTMLElement {
           opacity: 0.7;
         }
 
+        :host([selected]) {
+          --tile-border: var(--accent, #4a90d9);
+          --color-tile-border-filled: var(--accent, #4a90d9);
+        }
+
         :host([disabled]) {
           opacity: 0.5;
           pointer-events: none;
+        }
+
+        :host([status="info"]) {
+          --tile-bg: var(--color-info-bg, rgba(59, 130, 246, 0.18));
+          --tile-border: var(--color-info-border, rgba(59, 130, 246, 0.55));
+          --tile-text: var(--color-info-text, #dbeafe);
+        }
+
+        :host([status="error"]), :host([status="danger"]) {
+          --tile-bg: var(--color-error-bg, rgba(239, 68, 68, 0.18));
+          --tile-border: var(--color-error-border, rgba(239, 68, 68, 0.55));
+          --tile-text: var(--color-error-text, #fee2e2);
         }
 
         .tile {
@@ -154,9 +183,10 @@ export class GameTile extends HTMLElement {
           font-weight: bold;
         }
       </style>
-      ${isReadonly 
-        ? `<div class="tile${value ? ' filled' : ''}" part="tile">${value}</div>`
-        : `<input 
+      ${
+        isReadonly
+          ? `<div class="tile${value ? ' filled' : ''}" part="tile">${value}</div>`
+          : `<input 
             class="tile${value ? ' filled' : ''}" 
             part="tile"
             type="text"
@@ -204,42 +234,48 @@ export class GameTile extends HTMLElement {
       // Update filled class
       target.classList.toggle('filled', value.length > 0);
 
-      this.dispatchEvent(new CustomEvent<TileInputEventDetail>('tile-input', {
-        bubbles: true,
-        composed: true,
-        detail: {
-          value,
-          index: parseInt(this.getAttribute('index') || '0', 10)
-        }
-      }));
+      this.dispatchEvent(
+        new CustomEvent<TileInputEventDetail>('tile-input', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            value,
+            index: parseInt(this.getAttribute('index') || '0', 10),
+          },
+        }),
+      );
     });
 
     input.addEventListener('focus', () => {
       input.select();
-      this.dispatchEvent(new CustomEvent<TileFocusEventDetail>('tile-focus', {
-        bubbles: true,
-        composed: true,
-        detail: {
-          index: parseInt(this.getAttribute('index') || '0', 10)
-        }
-      }));
+      this.dispatchEvent(
+        new CustomEvent<TileFocusEventDetail>('tile-focus', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            index: parseInt(this.getAttribute('index') || '0', 10),
+          },
+        }),
+      );
     });
 
     input.addEventListener('keydown', (e: KeyboardEvent) => {
       const index = parseInt(this.getAttribute('index') || '0', 10);
 
-      this.dispatchEvent(new CustomEvent<TileKeydownEventDetail>('tile-keydown', {
-        bubbles: true,
-        composed: true,
-        detail: {
-          key: e.key,
-          index,
-          shiftKey: e.shiftKey,
-          ctrlKey: e.ctrlKey,
-          altKey: e.altKey,
-          originalEvent: e
-        }
-      }));
+      this.dispatchEvent(
+        new CustomEvent<TileKeydownEventDetail>('tile-keydown', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            key: e.key,
+            index,
+            shiftKey: e.shiftKey,
+            ctrlKey: e.ctrlKey,
+            altKey: e.altKey,
+            originalEvent: e,
+          },
+        }),
+      );
 
       // Handle Enter key - submit the parent form
       if (e.key === 'Enter') {
@@ -269,7 +305,7 @@ export class GameTile extends HTMLElement {
     if (name === 'value') {
       const input = this.shadowRoot!.querySelector('input');
       const div = this.shadowRoot!.querySelector('div.tile');
-      
+
       if (input && input.value !== newValue) {
         input.value = newValue || '';
         input.classList.toggle('filled', (newValue || '').length > 0);
@@ -283,7 +319,12 @@ export class GameTile extends HTMLElement {
       if (input) {
         input.placeholder = newValue || '';
       }
-    } else if (name === 'readonly' || name === 'disabled' || name === 'status') {
+    } else if (
+      name === 'readonly' ||
+      name === 'disabled' ||
+      name === 'status' ||
+      name === 'selected'
+    ) {
       // Re-render for structural changes
       this.#render();
     }
@@ -349,6 +390,19 @@ export class GameTile extends HTMLElement {
       this.setAttribute('disabled', '');
     } else {
       this.removeAttribute('disabled');
+    }
+  }
+
+  /** Whether tile is selected (UI highlight) */
+  get selected(): boolean {
+    return this.hasAttribute('selected');
+  }
+
+  set selected(val: boolean) {
+    if (val) {
+      this.setAttribute('selected', '');
+    } else {
+      this.removeAttribute('selected');
     }
   }
 
