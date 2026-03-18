@@ -31,7 +31,8 @@
   },
   "staticFiles": {
     "staticPath": "static",
-    "distDir": "dist"
+    "distDir": "dist",
+    "publicUrl": "./"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx,js}": [
