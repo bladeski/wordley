@@ -2,12 +2,13 @@
   "name": "wordley",
   "version": "1.0.0",
   "description": "A Wordle inspired game for one or two players",
-  "source": "src/index.html",
+  "source": "src/index.pug",
   "repository": "https://github.com/bladeski/wordley",
   "author": "Bladeski",
   "license": "MIT",
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@parcel/transformer-pug": "2.16.4",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
     "@typescript-eslint/parser": "^8.57.0",
     "eslint": "^10.0.3",
@@ -23,7 +24,7 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "start": "parcel --dist-dir dist-dev",
-    "build": "parcel build --public-url ./",
+    "build": "parcel build",
     "lint": "eslint . --ext .ts,.tsx,.js",
     "lint:fix": "eslint . --ext .ts,.tsx,.js --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\""
@@ -37,5 +38,11 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "targets": {
+    "default": {
+      "distDir": "dist",
+      "publicUrl": "./"
+    }
   }
 }

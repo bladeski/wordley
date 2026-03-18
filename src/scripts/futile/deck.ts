@@ -1,4 +1,5 @@
-import { COPIES_PER_TILE, COLOURS, NUMBERS, shuffle, Tile } from './shared';
+import { Tile, COLOURS, NUMBERS, COPIES_PER_TILE, shuffle } from "./shared";
+
 
 export class Deck {
   #tiles: Tile[];

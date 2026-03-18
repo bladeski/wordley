@@ -1,4 +1,4 @@
-import '../../components/tile-component';
+import '../components/tile-component';
 import type { Futile } from './futile';
 import { COLOUR_TO_STATUS, compareTiles, Tile, isSet, isRun } from './shared';
 

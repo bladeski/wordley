@@ -1,0 +1,74 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    meta(name="description" content="Futile - A number tile game.")
+    title Futile
+    link(rel="stylesheet" href="./styles/futile.css")
+
+  body
+    header
+      h1 Futile
+      button.icon-btn#settingsBtn(type="button" aria-label="Open settings") ⚙
+
+    dialog#settingsDialog(aria-labelledby="settingsTitle")
+      .dialog-header
+        h2#settingsTitle Settings
+        button.icon-btn#closeSettings(type="button" aria-label="Close settings") &#10006;
+
+      fieldset.setting-row.players-group
+        legend Players
+        .radio-group
+          label.radio-label
+            input(type="radio" name="playerCount" value="2")
+            span 2
+          label.radio-label
+            input(type="radio" name="playerCount" value="3")
+            span 3
+          label.radio-label
+            input(type="radio" name="playerCount" value="4")
+            span 4
+
+      fieldset.setting-row.difficulty-group
+        legend Difficulty
+        .radio-group
+          label.radio-label
+            input(type="radio" name="difficulty" value="easy")
+            span Easy
+          label.radio-label
+            input(type="radio" name="difficulty" value="medium" checked)
+            span Medium
+          label.radio-label
+            input(type="radio" name="difficulty" value="hard")
+            span Hard
+
+    main.board-shell
+      //- draw pile (unused)
+      //- .board-draw-pile
+
+      .board-play-area
+        .player-area.player1(aria-label="Player 1 area")
+          h2.player-name Player 1 #[span.player-score]
+          .player-hand(aria-label="Player 1 hand")
+          .played-tiles
+
+        .player-area.player2(aria-label="Player 2 area")
+          h2.player-name Player 2 #[span.player-score]
+          .player-hand(aria-label="Player 2 hand")
+          .played-tiles
+
+        .player-area.player3(aria-label="Player 3 area")
+          h2.player-name Player 3 #[span.player-score]
+          .player-hand(aria-label="Player 3 hand")
+          .played-tiles
+
+        .player-area.player4(aria-label="Player 4 area")
+          h2.player-name Player 4 #[span.player-score]
+          .player-hand(aria-label="Player 4 hand")
+          .played-tiles
+
+      #tileRack.player-hand
+      #message.message(role="status" aria-live="polite" aria-atomic="true")
+
+    script(type="module" src="./scripts/futile/futile.ts")

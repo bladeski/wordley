@@ -1,8 +1,8 @@
 // Futile - multiplayer tile game (class-based)
 // Split into modules: shared, deck, player, futile
 
-import '../../components/tile-component';
-import type { TileStatus } from '../../components/tile-component';
+import '../components/tile-component';
+import type { TileStatus } from '../components/tile-component';
 import { Tile, COLOUR_TO_STATUS } from './shared';
 import { Deck } from './deck';
 import { Player } from './player';

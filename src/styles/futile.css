@@ -1,34 +1,255 @@
-@import '../../styles.css';
-/* Shared global variables and base rules are imported from ../../styles.css above. */
-/* Keep Wordley-specific overrides and component styles below. */
+@import './styles.css';
 
-body {
-  &:has(#lengthSelect[data-length='4']) {
-    --guessCount: 4;
+/* Futile-specific styles (imports shared variables & base rules from src/styles.css) */
 
-    .letter5,
-    .letter6 {
-      display: none;
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--border-1) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+  font-size: var(--font-xl);
+  line-height: 1.2;
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(249, 115, 22, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+#settingsBtn {
+  position: absolute;
+  right: var(--space-lg);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ─────────────── Settings Dialog ─────────────── */
+
+dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 0;
+  min-width: 280px;
+  max-width: 90vw;
+  border: var(--border-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-2);
+  color: var(--text);
+  box-shadow: var(--shadow);
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  &[open] {
+    animation: dialogFadeIn 0.2s ease-out;
+  }
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Played melds */
+.played-tiles {
+  gap: var(--space-sm) var(--space-4xl);
+  margin-bottom: var(--space-sm);
+  flex-flow: wrap;
+  display: flex;
+  justify-content: center;
+}
+
+.meld {
+  display: flex;
+  width: max-content;
+  gap: var(--space-3xs);
+  transition:
+    box-shadow 0.12s ease,
+    transform 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.meld .game-tile[selected] {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* Tile that has been marked for passing and is pending transfer */
+game-tile[pending-pass] {
+  opacity: 0.9;
+  filter: saturate(0.85) brightness(0.97);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition:
+    opacity 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.meld-add {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.player-area {
+  display: none;
+
+  &.show {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: center;
+    flex: 1;
+  }
+
+  &.active {
+    .player-name {
+      &::before {
+        content: '';
+        position: absolute;
+        left: -1.1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 0.6rem solid transparent;
+        border-bottom: 0.6rem solid transparent;
+        border-left: 0.9rem solid var(--accent);
+      }
     }
   }
 
-  &:has(#lengthSelect[data-length='5']) {
-    --guessCount: 5;
+  .player-name {
+    position: relative;
+    align-self: flex-start;
+    display: flex;
+    gap: var(--space-xl);
+  }
+}
 
-    .letter6 {
-      display: none;
-    }
+.player-hand {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-xs);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-bottom: var(--border-1) solid var(--border);
+
+  h2 {
+    margin: 0;
+    font-size: var(--font-lg);
+    font-weight: 600;
+  }
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  color: var(--text);
+  font-size: var(--font-sm);
+}
+
+.players-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  legend {
+    float: left;
+    padding: 0;
+  }
+}
+
+.radio-group {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  cursor: pointer;
+  padding: var(--space-2xs) var(--space-sm);
+  border: var(--border-1) solid var(--border);
+  border-radius: var(--radius-sm);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+
+  &:hover {
+    border-color: var(--accent);
   }
 
-  &:has(#lengthSelect[data-length='6']) {
-    --guessCount: 6;
+  &:has(input:checked) {
+    border-color: var(--accent);
+    background: rgba(249, 115, 22, 0.1);
+  }
+
+  input {
+    appearance: none;
+    width: 0;
+    height: 0;
+    margin: 0;
+  }
+
+  span {
+    font-weight: 500;
   }
 }
 
 .board-shell {
+  width: 90vw;
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-rows: 1fr auto auto;
   gap: var(--space-lg);
+  flex-grow: 1;
 }
 
 .board-stack {
@@ -37,6 +258,14 @@ body {
   gap: var(--space-xs);
   align-items: stretch;
   z-index: 1;
+}
+
+.board-play-area {
+  --scale: 0.5;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
 }
 
 #board {
@@ -302,8 +531,8 @@ select {
 }
 
 .message {
+  display: block;
   position: relative;
-  display: none;
   padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-sm);
   border: var(--border-1) solid var(--border);
@@ -313,15 +542,16 @@ select {
   letter-spacing: 0.01em;
   min-height: 20px;
   text-align: center;
-  max-width: calc(
-    var(--guessCount) * var(--tile-size) + (var(--guessCount) - 1) * var(--space-xs) + 2 *
-      var(--space-2xl)
-  );
+  max-width: unset;
   word-wrap: break-word;
   overflow-wrap: break-word;
   overflow: hidden;
   --timer-progress: 0%;
   --timer-color: var(--color-success);
+
+  &:empty {
+    display: none;
+  }
 
   &::before {
     content: '';
@@ -348,10 +578,6 @@ select {
 
   &.timer-reset::before {
     transition: none;
-  }
-
-  &.show {
-    display: block;
   }
 
   &.info {

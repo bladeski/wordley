@@ -6,13 +6,13 @@
  */
 
 // Side-effect import to register the custom element
-import '../../components/tile-component';
+import '../components/tile-component';
 import type {
   GameTile,
   TileStatus,
   TileInputEventDetail,
   TileKeydownEventDetail,
-} from '../../components/tile-component';
+} from '../components/tile-component';
 
 // Type definitions
 type LetterStatus = 'absent' | 'present' | 'correct';
