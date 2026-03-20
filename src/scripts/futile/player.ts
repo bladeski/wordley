@@ -128,7 +128,9 @@ export class Player {
         el.setAttribute('readonly', '');
         el.setAttribute('status', COLOUR_TO_STATUS[t.colour] || '');
         el.dataset.id = t.id;
-        if (game.selectedMeldTileIds.has(t.id)) el.setAttribute('selected', '');
+        // unique instance key for this tile in this player's meld
+        const instanceKey = `${playerIdx}|${m}|${t.id}`;
+        if (game.selectedMeldInstanceKeys.has(instanceKey)) el.setAttribute('selected', '');
         el.addEventListener('click', (ev) => {
           ev.stopPropagation();
           // only allow selecting meld tiles when it's the human player's turn
@@ -141,37 +143,14 @@ export class Player {
           }
 
           // Toggle selection of this meld tile (allowed even if player hasn't played a meld yet)
-          if (game.selectedMeldTileIds.has(t.id)) {
-            game.selectedMeldTileIds.delete(t.id);
-            el.removeAttribute('selected');
+          // Toggle selection for this specific meld instance
+          if (game.selectedMeldInstanceKeys.has(instanceKey)) {
+            game.selectedMeldInstanceKeys.delete(instanceKey);
           } else {
-            // Prevent selecting matching tiles in other players' melds (same colour+number),
-            // but allow selecting multiple identical tiles within the same player's melds.
-            for (const sid of Array.from(game.selectedMeldTileIds)) {
-              let found: { id: string; colour: string; number: number; owner: number; meldIdx: number } | null = null;
-              for (let ownerIdx = 0; ownerIdx < game.players.length; ownerIdx++) {
-                const p = game.players[ownerIdx];
-                for (let mid = 0; mid < p.playedMelds.length; mid++) {
-                  const meld = p.playedMelds[mid];
-                  for (const mt of meld) {
-                    if (mt.id === sid) {
-                      found = { id: mt.id, colour: mt.colour, number: mt.number, owner: ownerIdx, meldIdx: mid };
-                      break;
-                    }
-                  }
-                  if (found) break;
-                }
-                if (found) break;
-              }
-              if (found && found.colour === t.colour && found.number === t.number) {
-                if (found.owner !== playerIdx) {
-                  game.selectedMeldTileIds.delete(found.id);
-                }
-              }
-            }
-            game.selectedMeldTileIds.add(t.id);
-            el.setAttribute('selected', '');
+            game.selectedMeldInstanceKeys.add(instanceKey);
           }
+          // keep id-based set in sync for existing logic that filters by tile id
+          game.syncSelectedMeldIdsFromInstances();
           game.renderAllHands();
         });
         meldEl.appendChild(el);

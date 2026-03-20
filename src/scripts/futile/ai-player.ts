@@ -138,8 +138,9 @@ export class AIPlayer {
               // ensure AI still has at least one hand tile before selecting
               if (game.players[this.idx].hand.length === 0) continue;
               // build selection of hand tiles required (exclude stolen which is in source meld)
-              game.selectedMeldTileIds.clear();
-              game.selectedMeldTileIds.add(stolen.id);
+              (game as any).clearSelectedMeldSelections();
+              (game as any).selectedMeldInstanceKeys.add(`${owner}|${mi}|${stolen.id}`);
+              (game as any).syncSelectedMeldIdsFromInstances();
               game.selectedIds.clear();
 
               if (tmpBestRunLen > tmpBestSetLen && tmpBestRunInfo) {
@@ -188,6 +189,7 @@ export class AIPlayer {
       if (bestDirectType === 'set') {
         const pick = bestDirectTiles;
         const added = await game.players[this.idx].addMeld(pick);
+        (game as any).clearSelectedMeldSelections();
         if (added) {
           for (const t of pick) game.players[this.idx].removeTileById(t.id);
           game.players[this.idx].markHasPlayedMeld();
@@ -245,8 +247,9 @@ export class AIPlayer {
                 const candidate = [stolen, h];
                 if (game.isSet(candidate) || game.isRun(candidate)) {
                   // select stolen tile and one hand tile and attempt stealCreate
-                  game.selectedMeldTileIds.clear();
-                  game.selectedMeldTileIds.add(stolen.id);
+                  (game as any).clearSelectedMeldSelections();
+                  (game as any).selectedMeldInstanceKeys.add(`${owner}|${mi}|${stolen.id}`);
+                  (game as any).syncSelectedMeldIdsFromInstances();
                   game.selectedIds.clear();
                   game.selectedIds.add(h.id);
                   game.selectedMeldSourceOwner = owner;
@@ -295,7 +298,7 @@ export class AIPlayer {
               // set selections and call game's addToMeld to apply the same validation
               game.selectedIds.clear();
               toAdd.forEach((t) => game.selectedIds.add(t.id));
-              game.selectedMeldTileIds.clear();
+              (game as any).clearSelectedMeldSelections();
               game.selectedMeldDestOwner = owner;
               game.selectedMeldDestMeldIdx = mi;
               // debug
@@ -309,7 +312,7 @@ export class AIPlayer {
               }
               // failed - clear selection and continue searching
               game.selectedIds.clear();
-              game.selectedMeldTileIds.clear();
+              (game as any).clearSelectedMeldSelections();
               game.selectedMeldDestOwner = null;
               game.selectedMeldDestMeldIdx = null;
             }
@@ -387,7 +390,7 @@ export class AIPlayer {
             // set selections and call game.addToMeld to apply central validation & effects
             game.selectedIds.clear();
             toAddTiles.forEach((t) => game.selectedIds.add(t.id));
-            game.selectedMeldTileIds.clear();
+            (game as any).clearSelectedMeldSelections();
             game.selectedMeldDestOwner = owner;
             game.selectedMeldDestMeldIdx = mi;
             // debug
@@ -400,7 +403,7 @@ export class AIPlayer {
               continue;
             }
             game.selectedIds.clear();
-            game.selectedMeldTileIds.clear();
+            (game as any).clearSelectedMeldSelections();
             game.selectedMeldDestOwner = null;
             game.selectedMeldDestMeldIdx = null;
           }

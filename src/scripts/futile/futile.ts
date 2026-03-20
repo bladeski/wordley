@@ -22,6 +22,9 @@ export class Futile {
   selectedMeldDestOwner: number | null = null;
   selectedMeldDestMeldIdx: number | null = null;
   selectedMeldTileIds: Set<string> = new Set();
+  // Track specific played-meld tile instances to avoid ambiguity when identical tiles exist
+  // Key format: `<owner>|<meldIdx>|<tileId>`
+  selectedMeldInstanceKeys: Set<string> = new Set();
 
   gameOver = false;
 
@@ -173,6 +176,54 @@ export class Futile {
     if (this.messageEl) this.messageEl.textContent = text;
   }
 
+  // Keep `selectedMeldTileIds` in sync with `selectedMeldInstanceKeys`.
+  syncSelectedMeldIdsFromInstances() {
+    // If we have instance keys, rebuild the id-based set from them.
+    if (this.selectedMeldInstanceKeys.size > 0) {
+      this.selectedMeldTileIds.clear();
+      for (const key of this.selectedMeldInstanceKeys) {
+        const parts = key.split('|');
+        const id = parts[2];
+        if (id) this.selectedMeldTileIds.add(id);
+      }
+      return;
+    }
+
+    // If there are no instance keys but there are id-only selections and a source owner/index,
+    // generate instance keys for the selected id(s) using the selected source owner/index.
+    if (this.selectedMeldInstanceKeys.size === 0 && this.selectedMeldTileIds.size > 0) {
+      if (this.selectedMeldSourceOwner !== null && this.selectedMeldSourceMeldIdx !== null) {
+        for (const id of Array.from(this.selectedMeldTileIds)) {
+          const k = `${this.selectedMeldSourceOwner}|${this.selectedMeldSourceMeldIdx}|${id}`;
+          this.selectedMeldInstanceKeys.add(k);
+        }
+      }
+    }
+  }
+
+  notify(text: string) {
+    // Show a blocking alert only when the human is the active player.
+    if (this.currentPlayer === this.humanPlayer) {
+      // eslint-disable-next-line no-alert
+      alert(text);
+    } else {
+      // For AI players, avoid blocking alerts — log and display a non-blocking message.
+      // eslint-disable-next-line no-console
+      console.warn('AI suppressed alert:', text);
+      this.setMessage(typeof text === 'string' ? text : String(text));
+    }
+  }
+
+  clearSelectedMeldSelections() {
+    // Clear both id-based and instance-based selection state and reset selection anchors
+    this.selectedMeldTileIds.clear();
+    this.selectedMeldInstanceKeys.clear();
+    this.selectedMeldSourceOwner = null;
+    this.selectedMeldSourceMeldIdx = null;
+    this.selectedMeldDestOwner = null;
+    this.selectedMeldDestMeldIdx = null;
+  }
+
   initUI() {
     const radios = document.querySelectorAll(
       'input[name="playerCount"]',
@@ -207,6 +258,8 @@ export class Futile {
   }
 
   renderAllHands() {
+    // ensure instance/id selection sets are synchronized before rendering
+    this.syncSelectedMeldIdsFromInstances();
     // Always render the current state so end-of-game updates are visible;
     // `gameOver` is used to block further actions, not rendering.
     for (let i = 0; i < this.playerAreas.length; i++) {
@@ -288,9 +341,9 @@ export class Futile {
   }
 
   effectiveHandCount(playerIdx: number): number {
-    // A player's effective hand count is the number of tiles they currently hold.
-    // Pending passes do not reduce ownership until they are applied at end-of-round,
-    // so they should not affect win detection.
+    // Outgoing pending passes count as part of a player's hand and therefore
+    // prevent the game from ending until the tile is actually removed when
+    // `applyPendingPasses()` runs.
     return this.players[playerIdx].hand.length;
   }
 
@@ -301,6 +354,8 @@ export class Futile {
     this.renderAllHands();
 
     if (gameEnded) {
+      // Mark the game as over so no further turns or AI actions proceed.
+      this.gameOver = true;
       const winner = [...this.players].sort((a, b) => b.score - a.score)[0];
       this.setMessage(`Player ${winner.id + 1} wins with a score of ${winner.score}!`);
     }
@@ -330,14 +385,14 @@ export class Futile {
       if (this.gameOver) return;
       const tiles = this.getSelectedTilesFromHand();
       if (tiles.length === 0) {
-        alert('Select tiles to play.');
+        this.notify('Select tiles to play.');
         return;
       }
 
       if (this.selectedMeldDestOwner !== null && this.selectedMeldDestMeldIdx !== null) {
         const hasPlayed = this.players[this.currentPlayer].hasPlayedMeld;
-        if (!hasPlayed) {
-          alert('You must have played at least one meld previously before adding to existing melds.');
+          if (!hasPlayed) {
+          this.notify('You must have played at least one meld previously before adding to existing melds.');
           return;
         }
         const owner = this.selectedMeldDestOwner;
@@ -348,7 +403,7 @@ export class Futile {
         if (targetIsSet) {
           const num = target[0].number;
           if (!tiles.every((t) => t.number === num)) {
-            alert('All tiles added to this set must have the same number as the set.');
+            this.notify('All tiles added to this set must have the same number as the set.');
             return;
           }
           tiles.forEach((t) => this.players[this.currentPlayer].removeTileById(t.id));
@@ -362,7 +417,7 @@ export class Futile {
         } else if (targetIsRun) {
           const colour = target[0].colour;
           if (!tiles.every((t) => t.colour === colour)) {
-            alert('Tiles added to this run must be the same colour as the run.');
+            this.notify('Tiles added to this run must be the same colour as the run.');
             return;
           }
           const existingNums = target.map((t) => t.number);
@@ -374,13 +429,13 @@ export class Futile {
             combinedNums.length !==
             existingNums.length + newNums.filter((n) => !existingNums.includes(n)).length
           ) {
-            alert('Cannot add duplicate numbers into a run.');
+            this.notify('Cannot add duplicate numbers into a run.');
             return;
           }
           const min = combinedNums[0];
           const max = combinedNums[combinedNums.length - 1];
           if (max - min + 1 !== combinedNums.length) {
-            alert('Added tiles must extend the run so the combined tiles are consecutive.');
+            this.notify('Added tiles must extend the run so the combined tiles are consecutive.');
             return;
           }
           tiles.forEach((t) => this.players[this.currentPlayer].removeTileById(t.id));
@@ -392,7 +447,7 @@ export class Futile {
           this.renderAllHands();
           return;
         } else {
-          alert('Target meld is neither a valid set nor run.');
+          this.notify('Target meld is neither a valid set nor run.');
           return;
         }
       }
@@ -401,15 +456,15 @@ export class Futile {
         tiles.forEach((t) => this.players[this.currentPlayer].removeTileById(t.id));
         const added = await this.players[this.currentPlayer].addMeld(tiles.slice());
         if (!added) {
-          alert('Failed to create meld — invalid combination.');
-          return;
+          this.notify('Failed to create meld — invalid combination.');
+            return;
         }
         this.selectedIds.clear();
         this.players[this.currentPlayer].markHasPlayedMeld();
         if (this.checkForWin()) return;
         this.renderAllHands();
       } else {
-        alert(
+        this.notify(
           'Invalid meld. A valid set is 3+ of the same number. A valid run is 3+ of same colour and consecutive numbers.',
         );
       }
@@ -464,20 +519,39 @@ export class Futile {
   async endTurn() {
     if (this.gameOver) return;
     const selectedForPass = Array.from(this.selectedIds);
-    if (selectedForPass.length !== 1) {
-      alert(
-        'You must select exactly one tile from your hand to pass to the next player before ending your turn.',
-      );
-      return;
+    let passId: string | null = null;
+    // Human players must explicitly select one tile. For AI players, auto-pick a tile if none or multiple selected.
+    if (this.currentPlayer === this.humanPlayer) {
+      if (selectedForPass.length !== 1) {
+        this.notify(
+          'You must select exactly one tile from your hand to pass to the next player before ending your turn.',
+        );
+        return;
+      }
+      passId = selectedForPass[0];
+    } else {
+      if (selectedForPass.length === 1) passId = selectedForPass[0];
+      else {
+        const hand = this.players[this.currentPlayer].hand;
+        if (hand.length > 0) {
+          // choose a deterministic tile (first) so AI behavior is predictable
+          passId = hand[0].id;
+        } else {
+          passId = null;
+        }
+      }
     }
-    const passId = selectedForPass[0];
+    if (!passId) {
+      // nothing to pass — for humans this was handled above; for AI, just advance without a pass
+      if (this.currentPlayer === this.humanPlayer) return;
+    }
     // Do NOT remove the tile from the player's hand yet — ownership remains until passes applied
     const receiver = (this.currentPlayer + 1) % this.playerCount;
-    this.pendingPasses[receiver] = { tileId: passId, from: this.currentPlayer };
+    this.pendingPasses[receiver] = { tileId: passId as string, from: this.currentPlayer };
 
     // Clear all selection state at end of turn so no stale selections remain
     this.selectedIds.clear();
-    this.selectedMeldTileIds.clear();
+    this.clearSelectedMeldSelections();
     this.selectedMeldSourceOwner = null;
     this.selectedMeldSourceMeldIdx = null;
     this.selectedMeldDestOwner = null;
@@ -526,7 +600,7 @@ export class Futile {
     this.selectedMeldSourceMeldIdx = null;
     this.selectedMeldDestOwner = null;
     this.selectedMeldDestMeldIdx = null;
-    this.selectedMeldTileIds.clear();
+    this.clearSelectedMeldSelections();
     this.players = [];
     for (let i = 0; i < this.playerCount; i++) this.players.push(new Player(i));
     // create AI players for all non-human players
@@ -547,19 +621,10 @@ export class Futile {
   }
 
   wireControls() {
-    const header = document.querySelector('header');
-    if (!header) return;
-    const ctrl = document.createElement('div');
-    ctrl.className = 'controls';
-    const createBtn = document.createElement('button');
-    createBtn.textContent = 'Create Meld';
-    createBtn.addEventListener('click', () => this.createMeld());
-    const endBtn = document.createElement('button');
-    endBtn.textContent = 'End Turn (Pass Selected)';
-    endBtn.addEventListener('click', () => this.endTurn());
-    ctrl.appendChild(createBtn);
-    ctrl.appendChild(endBtn);
-    header.appendChild(ctrl);
+    const createBtn = document.getElementById('meldButton') as HTMLButtonElement;
+    createBtn?.addEventListener('click', () => this.createMeld());
+    const endBtn = document.getElementById('passButton') as HTMLButtonElement;
+    endBtn?.addEventListener('click', () => this.endTurn());
   }
 
   async createMeld() {
@@ -578,11 +643,11 @@ export class Futile {
           const meld = player.playedMelds[mi];
           const idsToRemove = meld.map((t) => t.id).filter((id) => this.selectedMeldTileIds.has(id));
           if (idsToRemove.length > 0) {
-            const remaining = meld.filter((t) => !idsToRemove.includes(t.id));
-            if (remaining.length > 0 && !(this.isSet(remaining) || this.isRun(remaining))) {
-              alert('Cannot remove those tiles — one of the source melds would become invalid.');
-              return;
-            }
+              const remaining = meld.filter((t) => !idsToRemove.includes(t.id));
+              if (remaining.length > 0 && !(this.isSet(remaining) || this.isRun(remaining))) {
+                this.notify('Cannot remove those tiles — one of the source melds would become invalid.');
+                return;
+              }
             removals.push({ owner, meldIdx: mi, ids: idsToRemove });
             // add the actual Tile objects to stolenTiles
             for (const t of meld) if (idsToRemove.includes(t.id)) stolenTiles.push(t);
@@ -592,11 +657,23 @@ export class Futile {
 
       const combined = [...stolenTiles, ...handTiles];
       if (combined.length === 0) {
-        alert('Select tiles from your hand or a meld to create a meld.');
+        this.notify('Select tiles from your hand or a meld to create a meld.');
+        return;
+      }
+
+      // Prevent creating a meld solely from tiles stolen from other melds
+      // without including at least one tile from the player's hand.
+      if (stolenTiles.length > 0 && handTiles.length === 0) {
+        this.notify('You must include at least one tile from your hand when creating a meld from stolen tiles.');
+        return;
+      }
+      // Prevent creating a meld using only tiles stolen from other players' melds.
+      if (stolenTiles.length > 0 && handTiles.length === 0) {
+        this.notify('You must include at least one tile from your hand when creating a meld from existing melds.');
         return;
       }
       if (!(this.isSet(combined) || this.isRun(combined))) {
-        alert('Selected tiles do not form a valid meld.');
+        this.notify('Selected tiles do not form a valid meld.');
         return;
       }
 
@@ -608,11 +685,11 @@ export class Futile {
 
       const added = await this.players[this.currentPlayer].addMeld(combined.slice());
       if (!added) {
-        alert('Failed to create meld — resulting meld is invalid.');
+        this.notify('Failed to create meld — resulting meld is invalid.');
         return;
       }
       this.selectedIds.clear();
-      this.selectedMeldTileIds.clear();
+      this.clearSelectedMeldSelections();
       this.selectedMeldSourceOwner = null;
       this.selectedMeldSourceMeldIdx = null;
       if (this.checkForWin()) return;
@@ -635,7 +712,7 @@ export class Futile {
       // Player must have played at least one meld previously before adding to existing melds.
       const hasPlayed = this.players[this.currentPlayer].hasPlayedMeld;
       if (!hasPlayed) {
-        alert('You must have played at least one meld previously before adding to existing melds.');
+        this.notify('You must have played at least one meld previously before adding to existing melds.');
         return false;
       }
       const handTiles = this.getSelectedTilesFromHand();
@@ -649,7 +726,7 @@ export class Futile {
           if (idsToRemove.length > 0) {
             const remaining = meld.filter((t) => !idsToRemove.includes(t.id));
             if (remaining.length > 0 && !(this.isSet(remaining) || this.isRun(remaining))) {
-              alert('Cannot remove those tiles — one of the source melds would become invalid.');
+              this.notify('Cannot remove those tiles — one of the source melds would become invalid.');
               return false;
             }
             removals.push({ owner, meldIdx: mi, ids: idsToRemove });
@@ -660,19 +737,19 @@ export class Futile {
 
       const combined = [...stolenTiles, ...handTiles];
       if (combined.length === 0) {
-        alert('Select tiles from your hand or a meld to add.');
+        this.notify('Select tiles from your hand or a meld to add.');
         return false;
       }
 
       // Prevent moving tiles directly from one meld to another without playing at least one tile from your hand
       if (stolenTiles.length > 0 && handTiles.length === 0) {
-        alert('You must include at least one tile from your hand when moving tiles between melds.');
+        this.notify('You must include at least one tile from your hand when moving tiles between melds.');
         return false;
       }
 
       const destMeld = this.players[targetOwner].playedMelds[targetMeldIdx];
       if (!destMeld) {
-        alert('Destination meld no longer exists.');
+        this.notify('Destination meld no longer exists.');
         return false;
       }
       const dstIsSet = this.isSet(destMeld);
@@ -680,13 +757,13 @@ export class Futile {
       if (dstIsSet) {
         const num = destMeld[0].number;
         if (!combined.every((t) => t.number === num)) {
-          alert('Cannot add: combined tiles are not the same number required by destination set.');
+          this.notify('Cannot add: combined tiles are not the same number required by destination set.');
           return false;
         }
       } else if (dstIsRun) {
         const colour = destMeld[0].colour;
         if (!combined.every((t) => t.colour === colour)) {
-          alert('Cannot add: combined tiles are not the same colour required by destination run.');
+          this.notify('Cannot add: combined tiles are not the same colour required by destination run.');
           return false;
         }
         const existingNums = destMeld.map((t) => t.number);
@@ -696,17 +773,17 @@ export class Futile {
           combinedNums.length !==
           existingNums.length + newNums.filter((n) => !existingNums.includes(n)).length
         ) {
-          alert('Cannot add duplicate numbers into a run.');
+          this.notify('Cannot add duplicate numbers into a run.');
           return false;
         }
         const min = combinedNums[0];
         const max = combinedNums[combinedNums.length - 1];
         if (max - min + 1 !== combinedNums.length) {
-          alert('Added tiles must extend the run so the combined tiles are consecutive.');
+          this.notify('Added tiles must extend the run so the combined tiles are consecutive.');
           return false;
         }
       } else {
-        alert('Destination meld is neither a valid set nor run.');
+        this.notify('Destination meld is neither a valid set nor run.');
         return false;
       }
 
@@ -719,12 +796,12 @@ export class Futile {
       // debug: about to updateMeld
       const ok = await this.players[targetOwner].updateMeld(targetMeldIdx, combined.slice());
       if (!ok) {
-        alert('Failed to add tiles to destination meld — validation failed.');
+        this.notify('Failed to add tiles to destination meld — validation failed.');
         return false;
       }
 
       this.selectedIds.clear();
-      this.selectedMeldTileIds.clear();
+      this.clearSelectedMeldSelections();
       this.selectedMeldSourceOwner = null;
       this.selectedMeldSourceMeldIdx = null;
       this.selectedMeldDestOwner = null;
@@ -745,25 +822,25 @@ export class Futile {
     try {
       if (this.gameOver) return;
       if (this.selectedMeldSourceOwner === null || this.selectedMeldSourceMeldIdx === null) {
-        alert('Select a source meld to steal from first.');
+        this.notify('Select a source meld to steal from first.');
         return;
       }
       if (this.selectedMeldTileIds.size === 0) {
-        alert('Select one or more tiles from the source meld to steal.');
+        this.notify('Select one or more tiles from the source meld to steal.');
         return;
       }
       const handTiles = this.getSelectedTilesFromHand();
       if (handTiles.length === 0) {
-        alert('Select one or more tiles from your hand to use with stolen tiles.');
+        this.notify('Select one or more tiles from your hand to use with stolen tiles.');
         return;
       }
       const owner = this.selectedMeldSourceOwner!;
       const meldIdx = this.selectedMeldSourceMeldIdx!;
       if (!this.players[owner] || !this.players[owner].playedMelds[meldIdx]) {
-        alert('The selected source meld is no longer available. Please re-select a source meld.');
+        this.notify('The selected source meld is no longer available. Please re-select a source meld.');
         this.selectedMeldSourceOwner = null;
         this.selectedMeldSourceMeldIdx = null;
-        this.selectedMeldTileIds.clear();
+        this.clearSelectedMeldSelections();
         this.renderAllHands();
         return;
       }
@@ -771,12 +848,12 @@ export class Futile {
       const stolenTiles: Tile[] = sourceMeld.filter((t) => this.selectedMeldTileIds.has(t.id));
       const remaining = sourceMeld.filter((t) => !this.selectedMeldTileIds.has(t.id));
       if (remaining.length > 0 && !(this.isSet(remaining) || this.isRun(remaining))) {
-        alert('Cannot steal these tiles — the original meld would become invalid.');
+        this.notify('Cannot steal these tiles — the original meld would become invalid.');
         return;
       }
       const combined = [...stolenTiles, ...handTiles];
       if (!(this.isSet(combined) || this.isRun(combined))) {
-        alert('Stolen tiles plus selected hand tiles do not form a valid meld.');
+        this.notify('Stolen tiles plus selected hand tiles do not form a valid meld.');
         return;
       }
       const tileIds = Array.from(this.selectedMeldTileIds);
@@ -784,10 +861,10 @@ export class Futile {
       handTiles.forEach((t) => this.players[this.currentPlayer].removeTileById(t.id));
       const added = await this.players[this.currentPlayer].addMeld(combined);
       if (!added) {
-        alert('Failed to create meld from stolen tiles — resulting meld invalid.');
+        this.notify('Failed to create meld from stolen tiles — resulting meld invalid.');
         return;
       }
-      this.selectedMeldTileIds.clear();
+      this.clearSelectedMeldSelections();
       this.selectedMeldSourceOwner = null;
       this.selectedMeldSourceMeldIdx = null;
       this.selectedIds.clear();
@@ -806,22 +883,22 @@ export class Futile {
     try {
       if (this.gameOver) return;
       if (this.selectedMeldSourceOwner === null || this.selectedMeldSourceMeldIdx === null) {
-        alert('Select a source meld to steal from first.');
+        this.notify('Select a source meld to steal from first.');
         return;
       }
       if (this.selectedMeldTileIds.size === 0) {
-        alert('Select one or more tiles from the source meld to steal.');
+        this.notify('Select one or more tiles from the source meld to steal.');
         return;
       }
       if (this.selectedMeldDestOwner === null || this.selectedMeldDestMeldIdx === null) {
-        alert(
+        this.notify(
           'Select a destination meld to add to (click a meld while you have hand tiles selected).',
         );
         return;
       }
       const handTiles = this.getSelectedTilesFromHand();
       if (handTiles.length === 0) {
-        alert('Select one or more tiles from your hand to use with stolen tiles.');
+        this.notify('Select one or more tiles from your hand to use with stolen tiles.');
         return;
       }
       const srcOwner = this.selectedMeldSourceOwner!;
@@ -833,7 +910,7 @@ export class Futile {
       const stolenTiles: Tile[] = sourceMeld.filter((t) => this.selectedMeldTileIds.has(t.id));
       const remaining = sourceMeld.filter((t) => !this.selectedMeldTileIds.has(t.id));
       if (remaining.length > 0 && !(this.isSet(remaining) || this.isRun(remaining))) {
-        alert('Cannot steal these tiles — the original meld would become invalid.');
+        this.notify('Cannot steal these tiles — the original meld would become invalid.');
         return;
       }
       const combined = [...stolenTiles, ...handTiles];
@@ -842,13 +919,13 @@ export class Futile {
       if (dstIsSet) {
         const num = destMeld[0].number;
         if (!combined.every((t) => t.number === num)) {
-          alert('Cannot add: combined tiles are not the same number required by destination set.');
+          this.notify('Cannot add: combined tiles are not the same number required by destination set.');
           return;
         }
       } else if (dstIsRun) {
         const colour = destMeld[0].colour;
         if (!combined.every((t) => t.colour === colour)) {
-          alert('Cannot add: combined tiles are not the same colour required by destination run.');
+          this.notify('Cannot add: combined tiles are not the same colour required by destination run.');
           return;
         }
         const existingNums = destMeld.map((t) => t.number);
@@ -858,24 +935,24 @@ export class Futile {
           combinedNums.length !==
           existingNums.length + newNums.filter((n) => !existingNums.includes(n)).length
         ) {
-          alert('Cannot add duplicate numbers into a run.');
+          this.notify('Cannot add duplicate numbers into a run.');
           return;
         }
         const min = combinedNums[0];
         const max = combinedNums[combinedNums.length - 1];
         if (max - min + 1 !== combinedNums.length) {
-          alert('Added tiles must extend the run so the combined tiles are consecutive.');
+          this.notify('Added tiles must extend the run so the combined tiles are consecutive.');
           return;
         }
       } else {
-        alert('Destination meld is neither a valid set nor run.');
+        this.notify('Destination meld is neither a valid set nor run.');
         return;
       }
       const tileIds = Array.from(this.selectedMeldTileIds);
       await this.players[srcOwner].removeTilesFromMeld(srcIdx, tileIds);
       handTiles.forEach((t) => this.players[this.currentPlayer].removeTileById(t.id));
       await this.players[dstOwner].updateMeld(dstIdx, combined);
-      this.selectedMeldTileIds.clear();
+      this.clearSelectedMeldSelections();
       this.selectedMeldSourceOwner = null;
       this.selectedMeldSourceMeldIdx = null;
       this.selectedMeldDestOwner = null;

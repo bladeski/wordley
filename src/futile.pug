@@ -69,6 +69,9 @@ html(lang="en")
           .played-tiles
 
       #tileRack.player-hand
+      .button-group 
+        button#meldButton(type="button") Meld 
+        button#passButton(type="button") Pass
       #message.message(role="status" aria-live="polite" aria-atomic="true")
 
     script(type="module" src="./scripts/futile/futile.ts")
