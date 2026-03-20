@@ -14,6 +14,10 @@ export type TileStatus =
   | 'info' // Blue, for informational purposes
   | 'error'
   | 'danger' // Red, for error states
+  | 'blue' // Blue, for informational purposes
+  | 'green' // Green, for success states
+  | 'yellow' // Yellow, for warning states
+  | 'red' // Red, for error states
   | '';
 export type TileType = 'letter' | 'number';
 
@@ -95,13 +99,13 @@ export class GameTile extends HTMLElement {
           --tile-text: var(--color-tile-text, #1a1a1b);
         }
 
-        :host([status="correct"]), :host([status="success"]) {
+        :host([status="correct"]), :host([status="success"]), :host([status="green"]) {
           --tile-bg: var(--color-success-bg, rgba(34, 197, 94, 0.18));
           --tile-border: var(--color-success-border, rgba(34, 197, 94, 0.55));
           --tile-text: var(--color-success-text, #dcfce7);
         }
 
-        :host([status="present"]), :host([status="warning"]) {
+        :host([status="present"]), :host([status="warning"]), :host([status="yellow"]) {
           --tile-bg: var(--color-warning-bg, rgba(234, 179, 8, 0.18));
           --tile-border: var(--color-warning-border, rgba(234, 179, 8, 0.55));
           --tile-text: var(--color-warning-text, #fef9c3);
@@ -111,7 +115,6 @@ export class GameTile extends HTMLElement {
           --tile-bg: var(--color-absent-bg, rgba(71, 85, 105, 0.3));
           --tile-border: var(--color-absent-border, rgba(71, 85, 105, 0.7));
           --tile-text: var(--color-absent-text, #cbd5e1);
-          opacity: 0.7;
         }
 
         :host([selected]) {
@@ -124,13 +127,13 @@ export class GameTile extends HTMLElement {
           pointer-events: none;
         }
 
-        :host([status="info"]) {
+        :host([status="info"]), :host([status="blue"]) {
           --tile-bg: var(--color-info-bg, rgba(59, 130, 246, 0.18));
           --tile-border: var(--color-info-border, rgba(59, 130, 246, 0.55));
           --tile-text: var(--color-info-text, #dbeafe);
         }
 
-        :host([status="error"]), :host([status="danger"]) {
+        :host([status="error"]), :host([status="danger"]), :host([status="red"]) {
           --tile-bg: var(--color-error-bg, rgba(239, 68, 68, 0.18));
           --tile-border: var(--color-error-border, rgba(239, 68, 68, 0.55));
           --tile-text: var(--color-error-text, #fee2e2);
@@ -182,11 +185,53 @@ export class GameTile extends HTMLElement {
           opacity: 0.6;
           font-weight: bold;
         }
+
+        [data-tooltip]:not([data-tooltip=""]) {
+          anchor-name: --tooltip;
+
+          &::after {
+            position: absolute;
+            content: attr(data-tooltip);
+            position-anchor: --tooltip;
+            inset: unset;
+            top: anchor(bottom);
+            left: anchor(center);
+            right: auto;
+            transform: translateX(-50%);
+            margin-top: var(--space-xs);
+            margin-left: 0;
+            max-width: 14rem;
+            font-size: var(--font-sm);
+            background: var(--bg-2);
+            border: var(--border-1) solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm) var(--space-md);
+            font-size: var(--font-sm);
+            color: var(--text);
+            white-space: normal;
+            width: max-content;
+            line-height: 1.5;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition:
+              opacity 200ms ease,
+              visibility 200ms ease;
+            z-index: 100;
+            text-align: left;
+            max-width: calc(6 * var(--tile-size));
+          }
+
+          &:hover::after {
+            opacity: 1;
+            visibility: visible;
+          }
+        }
       </style>
-      ${
-        isReadonly
-          ? `<div class="tile${value ? ' filled' : ''}" part="tile">${value}</div>`
-          : `<input 
+      ${isReadonly
+        ? `<div class="tile${value ? ' filled' : ''}" data-tooltip="${value ? value + ' ' : ''}${this.status ? this.status : ''}" part="tile" aria-label="Tile ${value ? value + ' ' : ''}${this.status ? this.status : ''}">${value}</div>`
+        : `<input 
             class="tile${value ? ' filled' : ''}" 
             part="tile"
             type="text"
@@ -199,7 +244,7 @@ export class GameTile extends HTMLElement {
             spellcheck="false"
             inputmode="${type === 'number' ? 'numeric' : 'text'}"
             pattern="${type === 'number' ? '[0-9]' : '[a-zA-Z]'}"
-            aria-label="Tile ${this.getAttribute('index') || ''}"
+            aria-label="Tile ${value ? value + ' ' : ''}${this.status ? this.status : ''}"
           />`
       }
     `;

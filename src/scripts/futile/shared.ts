@@ -11,10 +11,10 @@ export const COPIES_PER_TILE = 2;
 export const NUMBERS = Array.from({ length: 10 }, (_, i) => i);
 
 export const COLOUR_TO_STATUS: Record<Colour, string> = {
-  blue: 'info',
-  red: 'error',
-  amber: 'warning',
-  green: 'success',
+  blue: 'blue',
+  red: 'red',
+  amber: 'yellow',
+  green: 'green',
 };
 
 export function shuffle<T>(arr: T[]): T[] {

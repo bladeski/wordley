@@ -12,7 +12,7 @@ export class Deck {
       for (const n of NUMBERS) {
         for (let k = 0; k < COPIES_PER_TILE; k++) {
           deck.push({
-            id: `${c}-${n}-${k}-${Math.random().toString(36).slice(2, 8)}`,
+            id: `${c}-${n}-${k}-${(Math.random()).toString(36).slice(2, 8)}`,
             colour: c,
             number: n,
           });

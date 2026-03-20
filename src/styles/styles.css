@@ -136,6 +136,15 @@ h1 {
   color: var(--text);
 }
 
+a {
+  color: var(--text);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
 /* ─────────────── Header ─────────────── */
 
 header {
@@ -499,6 +508,49 @@ select {
     &::before,
     &::after {
       display: none;
+    }
+  }
+
+  [data-tooltip]:not([data-tooltip=""]) {
+    anchor-name: --tooltip;
+
+    &::after {
+      position: absolute;
+      content: attr(data-tooltip);
+      position-anchor: --info-anchor;
+      inset: unset;
+      top: anchor(bottom);
+      left: anchor(center);
+      right: auto;
+      transform: translateX(-50%);
+      margin-top: var(--space-xs);
+      margin-left: 0;
+      max-width: 14rem;
+      font-size: var(--font-sm);
+      background: var(--bg-2);
+      border: var(--border-1) solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: var(--font-sm);
+      color: var(--text);
+      white-space: normal;
+      width: max-content;
+      line-height: 1.5;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition:
+        opacity 200ms ease,
+        visibility 200ms ease;
+      z-index: 100;
+      text-align: left;
+      max-width: calc(6 * var(--tile-size));
+    }
+
+    &:hover::after {
+      opacity: 1;
+      visibility: visible;
     }
   }
 

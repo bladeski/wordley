@@ -1,4 +1,5 @@
 import '../components/tile-component';
+import { GameTile } from '../components/tile-component';
 import type { Futile } from './futile';
 import { COLOUR_TO_STATUS, compareTiles, Tile, isSet, isRun } from './shared';
 
@@ -95,16 +96,9 @@ export class Player {
   render(area: HTMLElement, playerIdx: number, game: Futile): void {
     if (!area) return;
     // Render blank/backed tiles in each player's area to indicate hand size
-    const handEl = area.querySelector('.player-hand') as HTMLElement | null;
+    const handEl = area.querySelector('.player-hand game-tile') as GameTile;
     if (handEl) {
-      handEl.innerHTML = '';
-      this.#hand.forEach(() => {
-        const tileEl = document.createElement('game-tile') as HTMLElement;
-        tileEl.setAttribute('value', '');
-        tileEl.setAttribute('type', 'number');
-        tileEl.setAttribute('readonly', '');
-        handEl.appendChild(tileEl);
-      });
+      handEl.value = `x${this.#hand.length}`;
     }
 
     // Render played melds

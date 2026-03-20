@@ -9,8 +9,36 @@ html(lang="en")
 
   body
     header
+      button.icon-btn#helpBtn(type="button" aria-label="Open help") ?
       h1 Futile
       button.icon-btn#settingsBtn(type="button" aria-label="Open settings") ⚙
+    
+    dialog#helpDialog(aria-labelledby="helpTitle")
+      .dialog-header
+        h2#helpTitle How to play
+        button.icon-btn#closeHelp(type="button" aria-label="Close help") &#10006;
+
+      .help-content
+        p Futile is a turn-based tile game for 2-4 players. The objective is to be the first to play all your tiles by forming valid sets and runs.
+        h3 Setup
+        ol
+          li Each player starts with 10 tiles.
+          li The remaining tiles form the draw pile.
+        h3 Gameplay
+        ol
+          li On your turn, you start by drawing a tile from the draw pile. You then:
+            ol
+              li Play a valid set or run from your hand onto the table.
+              li Pass your turn by selecting a tile to pass to the next player.
+          li A set consists of 3 or more tiles of the same number but different colours.
+          li A run consists of 3 or more consecutive numbers of the same colour.
+          li The first player to play all their tiles ends the game, and scores an additional 10 points.
+          li The winner is determined by the player with the highest score at the end of the game.
+          li Scoring is based on the tiles each player has in their melds, minus any tiles left in their hand at the end of the game.
+        h3 Strategy Tips
+        ul
+          li Try to create sets and runs that use up your high-value tiles first.
+          li Keep an eye on the draw pile and try to anticipate which tiles might come up next.
 
     dialog#settingsDialog(aria-labelledby="settingsTitle")
       .dialog-header
@@ -50,22 +78,26 @@ html(lang="en")
       .board-play-area
         .player-area.player1(aria-label="Player 1 area")
           h2.player-name Player 1 #[span.player-score]
-          .player-hand(aria-label="Player 1 hand")
+            .player-hand(aria-label="Player 1 hand")
+              game-tile(readonly)
           .played-tiles
 
         .player-area.player2(aria-label="Player 2 area")
           h2.player-name Player 2 #[span.player-score]
-          .player-hand(aria-label="Player 2 hand")
+            .player-hand(aria-label="Player 2 hand")
+              game-tile(readonly)
           .played-tiles
 
         .player-area.player3(aria-label="Player 3 area")
           h2.player-name Player 3 #[span.player-score]
-          .player-hand(aria-label="Player 3 hand")
+            .player-hand(aria-label="Player 3 hand")
+              game-tile(readonly)
           .played-tiles
 
         .player-area.player4(aria-label="Player 4 area")
           h2.player-name Player 4 #[span.player-score]
-          .player-hand(aria-label="Player 4 hand")
+            .player-hand(aria-label="Player 4 hand")
+              game-tile(readonly)
           .played-tiles
 
       #tileRack.player-hand

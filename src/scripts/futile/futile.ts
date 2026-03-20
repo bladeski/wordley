@@ -12,7 +12,7 @@ import { AIPlayer } from './ai-player';
 export class Futile {
   playerCount = 2;
   players: Player[] = [];
-  deck: Deck = new Deck();
+  deck?: Deck;
   currentPlayer = 0;
   turnsThisRound = 0;
   pendingPasses: Array<{ tileId: string; from: number } | null> = [];
@@ -39,6 +39,10 @@ export class Futile {
   // DOM
   messageEl: HTMLElement | null = null;
   playerAreas: HTMLElement[] = [];
+  // help dialog elements
+  helpButton: HTMLElement | null = null;
+  helpDialog: HTMLDialogElement | null = null;
+  closeHelpBtn: HTMLElement | null = null;
   // settings dialog elements
   settingsDialog: HTMLDialogElement | null = null;
   settingsBtn: HTMLElement | null = null;
@@ -57,6 +61,9 @@ export class Futile {
   init() {
     this.messageEl = document.getElementById('message');
     this.playerAreas = Array.from(document.querySelectorAll('.player-area')) as HTMLElement[];
+    this.helpButton = document.getElementById('helpBtn');
+    this.helpDialog = document.getElementById('helpDialog') as HTMLDialogElement | null;
+    this.closeHelpBtn = document.getElementById('closeHelp');
     this.settingsBtn = document.getElementById('settingsBtn');
     this.settingsDialog = document.getElementById('settingsDialog') as HTMLDialogElement | null;
     this.closeSettingsBtn = document.getElementById('closeSettings');
@@ -64,8 +71,33 @@ export class Futile {
     this.loadSettings();
     this.initUI();
     this.wireControls();
+    this.wireHelp();
     this.wireSettings();
     this.startNewGame();
+  }
+
+  wireHelp() {
+    if (this.helpButton && this.helpDialog) {
+      this.helpButton.addEventListener('click', () => this.openHelp());
+    }
+    if (this.closeHelpBtn && this.helpDialog) {
+      this.closeHelpBtn.addEventListener('click', () => this.helpDialog?.close());
+    }
+    if (this.helpDialog) {
+      this.helpDialog.addEventListener('click', (ev) => {
+        if (ev.target === this.helpDialog) this.helpDialog?.close();
+      });
+    }
+  }
+
+  openHelp() {
+    if (!this.helpDialog) return;
+    try {
+      this.helpDialog.showModal();
+    } catch {
+      // fallback for browsers without dialog support
+      (this.helpDialog as any).open = true;
+    }
   }
 
   wireSettings() {
@@ -190,12 +222,23 @@ export class Futile {
     }
 
     // If there are no instance keys but there are id-only selections and a source owner/index,
-    // generate instance keys for the selected id(s) using the selected source owner/index.
+    // generate instance keys for the selected id(s) using the selected source owner/index,
+    // but only if that tile id actually exists in the referenced source meld. This avoids
+    // incorrectly mapping an id to a different meld when identical tiles exist elsewhere.
     if (this.selectedMeldInstanceKeys.size === 0 && this.selectedMeldTileIds.size > 0) {
       if (this.selectedMeldSourceOwner !== null && this.selectedMeldSourceMeldIdx !== null) {
-        for (const id of Array.from(this.selectedMeldTileIds)) {
-          const k = `${this.selectedMeldSourceOwner}|${this.selectedMeldSourceMeldIdx}|${id}`;
-          this.selectedMeldInstanceKeys.add(k);
+        const owner = this.selectedMeldSourceOwner;
+        const idx = this.selectedMeldSourceMeldIdx;
+        const player = this.players[owner];
+        if (player && player.playedMelds && player.playedMelds[idx]) {
+          const sourceMeld = player.playedMelds[idx];
+          const availableIds = new Set(sourceMeld.map((t) => t.id));
+          for (const id of Array.from(this.selectedMeldTileIds)) {
+            if (availableIds.has(id)) {
+              const k = `${owner}|${idx}|${id}`;
+              this.selectedMeldInstanceKeys.add(k);
+            }
+          }
         }
       }
     }
@@ -271,8 +314,6 @@ export class Futile {
         this.players[i].render(area, i, this);
       } else {
         // clear any leftover DOM for non-participating areas
-        const hand = area.querySelector('.player-hand');
-        if (hand) hand.innerHTML = '';
         const played = area.querySelector('.played-tiles');
         if (played) played.innerHTML = '';
         const scoreEl = area.querySelector('.player-score') as HTMLElement | null;
@@ -292,7 +333,6 @@ export class Futile {
           tileEl.setAttribute('type', 'number');
           tileEl.setAttribute('readonly', '');
           tileEl.dataset.id = tile.id;
-          tileEl.title = `${tile.colour.toUpperCase()} ${tile.number}`;
           tileEl.setAttribute('status', COLOUR_TO_STATUS[tile.colour]);
           if (this.selectedIds.has(tile.id)) tileEl.setAttribute('selected', '');
           const pending = this.pendingPasses.find(
@@ -320,7 +360,7 @@ export class Futile {
   }
 
   renderDraw() {
-    this.setMessage(`Draw pile: ${this.deck.size} — Player ${this.currentPlayer + 1}'s turn`);
+    this.setMessage(`Draw pile: ${this.deck?.size} — Player ${this.currentPlayer + 1}'s turn`);
   }
 
   updateScores() {
@@ -344,7 +384,13 @@ export class Futile {
     // Outgoing pending passes count as part of a player's hand and therefore
     // prevent the game from ending until the tile is actually removed when
     // `applyPendingPasses()` runs.
-    return this.players[playerIdx].hand.length;
+    let count = this.players[playerIdx].hand.length;
+    if (Array.isArray(this.pendingPasses) && this.pendingPasses.length > 0) {
+      for (const p of this.pendingPasses) {
+        if (p && p.from === playerIdx) count++;
+      }
+    }
+    return count;
   }
 
   checkForWin(): boolean {
@@ -476,7 +522,7 @@ export class Futile {
 
   async startTurn() {
     if (this.gameOver) return;
-    const tile = this.deck.draw();
+    const tile = this.deck?.draw();
     if (tile) this.players[this.currentPlayer].receiveTile(tile);
     this.selectedIds.clear();
     this.turnsThisRound++;

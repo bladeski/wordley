@@ -58,7 +58,6 @@ game-tile[pending-pass] {
     flex-direction: column;
     gap: var(--space-md);
     align-items: center;
-    flex: 1;
   }
 
   &.active {
@@ -195,6 +194,7 @@ game-tile[pending-pass] {
   --scale: 0.5;
   width: 100%;
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: var(--space-xl);
 }
